@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: canbankx-postgres
+    environment:
+      POSTGRES_DB: canbankx
+      POSTGRES_USER: canbankx
+      POSTGRES_PASSWORD: canbankx
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  customer-service:
+    build: ./services/customer-service
+    container_name: canbankx-customer-service
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/canbankx
+      SPRING_DATASOURCE_USERNAME: canbankx
+      SPRING_DATASOURCE_PASSWORD: canbankx
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+
+volumes:
+  postgres-data:

@@ -1,0 +1,24 @@
+# Gradle
+.gradle/
+build/
+
+# Java
+*.class
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# env
+.envbuild/
+.gradle/
+*.log
+node_modules/
+.env
+.idea
+.vscode
