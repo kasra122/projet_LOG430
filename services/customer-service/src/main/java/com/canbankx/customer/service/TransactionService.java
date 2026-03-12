@@ -2,9 +2,14 @@ package com.canbankx.customer.service;
 
 import com.canbankx.customer.domain.Account;
 import com.canbankx.customer.domain.Transaction;
+import com.canbankx.customer.exception.InsufficientFundsException;
+import com.canbankx.customer.exception.InvalidAmountException;
+import com.canbankx.customer.exception.ResourceNotFoundException;
 import com.canbankx.customer.repository.AccountRepository;
 import com.canbankx.customer.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,36 +22,43 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TransactionService {
 
+    private static final Logger log = LoggerFactory.getLogger(TransactionService.class);
+
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
 
     @Transactional
     public Transaction deposit(UUID accountId, BigDecimal amount) {
 
+        validateAmount(amount);
+
         Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new RuntimeException("Account not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Account not found: " + accountId));
 
         account.setBalance(account.getBalance().add(amount));
         accountRepository.save(account);
 
         Transaction transaction = Transaction.builder()
-                .targetAccountId(accountId)
+                .sourceAccountId(accountId)
                 .amount(amount)
                 .type("DEPOSIT")
                 .createdAt(Instant.now())
                 .build();
 
+        log.info("Deposit of {} to account {}", amount, accountId);
         return transactionRepository.save(transaction);
     }
 
     @Transactional
     public Transaction withdraw(UUID accountId, BigDecimal amount) {
 
+        validateAmount(amount);
+
         Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new RuntimeException("Account not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Account not found: " + accountId));
 
         if (account.getBalance().compareTo(amount) < 0) {
-            throw new RuntimeException("Insufficient funds");
+            throw new InsufficientFundsException("Insufficient funds in account: " + accountId);
         }
 
         account.setBalance(account.getBalance().subtract(amount));
@@ -59,20 +71,27 @@ public class TransactionService {
                 .createdAt(Instant.now())
                 .build();
 
+        log.info("Withdrawal of {} from account {}", amount, accountId);
         return transactionRepository.save(transaction);
     }
 
     @Transactional
     public Transaction transfer(UUID sourceAccountId, UUID targetAccountId, BigDecimal amount) {
 
+        validateAmount(amount);
+
+        if (sourceAccountId.equals(targetAccountId)) {
+            throw new InvalidAmountException("Source and target accounts must be different");
+        }
+
         Account source = accountRepository.findById(sourceAccountId)
-                .orElseThrow(() -> new RuntimeException("Source account not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Source account not found: " + sourceAccountId));
 
         Account target = accountRepository.findById(targetAccountId)
-                .orElseThrow(() -> new RuntimeException("Target account not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Target account not found: " + targetAccountId));
 
         if (source.getBalance().compareTo(amount) < 0) {
-            throw new RuntimeException("Insufficient funds");
+            throw new InsufficientFundsException("Insufficient funds in account: " + sourceAccountId);
         }
 
         source.setBalance(source.getBalance().subtract(amount));
@@ -89,6 +108,7 @@ public class TransactionService {
                 .createdAt(Instant.now())
                 .build();
 
+        log.info("Transfer of {} from account {} to account {}", amount, sourceAccountId, targetAccountId);
         return transactionRepository.save(transaction);
     }
 
@@ -96,5 +116,11 @@ public class TransactionService {
 
         return transactionRepository
                 .findBySourceAccountIdOrTargetAccountId(accountId, accountId);
+    }
+
+    private void validateAmount(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InvalidAmountException("Amount must be greater than zero");
+        }
     }
 }

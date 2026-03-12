@@ -2,8 +2,9 @@ package com.canbankx.customer.controller;
 
 import com.canbankx.customer.domain.Customer;
 import com.canbankx.customer.service.CustomerService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
-import java.time.Instant;
+
 import java.util.List;
 
 @RestController
@@ -17,11 +18,9 @@ public class CustomerController {
     }
 
     @PostMapping
-public Customer createCustomer(@RequestBody Customer customer) {
-    customer.setKycStatus("PENDING");
-    customer.setCreatedAt(Instant.now());
-    return service.createCustomer(customer);
-}
+    public Customer createCustomer(@Valid @RequestBody Customer customer) {
+        return service.createCustomer(customer);
+    }
 
     @GetMapping
     public List<Customer> getCustomers() {
