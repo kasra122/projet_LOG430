@@ -35,6 +35,13 @@ public class Customer {
     private String email;
 
     @Column(nullable = false)
+    private String password;
+
+    private String address;
+
+    private String phone;
+
+    @Column(nullable = false)
     private String kycStatus;
 
     @Column(nullable = false)

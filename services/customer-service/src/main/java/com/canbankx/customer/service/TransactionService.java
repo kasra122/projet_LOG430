@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -27,11 +28,20 @@ public class TransactionService {
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
     private final AuditService auditService;
+    private final AmlService amlService;
 
     @Transactional
-    public Transaction deposit(UUID accountId, BigDecimal amount) {
+    public Transaction deposit(UUID accountId, BigDecimal amount, String idempotencyKey) {
 
         validateAmount(amount);
+
+        if (idempotencyKey != null) {
+            Optional<Transaction> existing = transactionRepository.findByIdempotencyKey(idempotencyKey);
+            if (existing.isPresent()) {
+                log.info("Idempotent deposit returned for key: {}", idempotencyKey);
+                return existing.get();
+            }
+        }
 
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found: " + accountId));
@@ -43,6 +53,7 @@ public class TransactionService {
                 .sourceAccountId(accountId)
                 .amount(amount)
                 .type("DEPOSIT")
+                .idempotencyKey(idempotencyKey)
                 .createdAt(Instant.now())
                 .build();
 
@@ -52,13 +63,23 @@ public class TransactionService {
         auditService.logAction("TRANSACTION", saved.getId().toString(), "DEPOSIT",
                 "Deposit of " + amount + " to account " + accountId, "SYSTEM");
 
+        amlService.checkTransaction(saved);
+
         return saved;
     }
 
     @Transactional
-    public Transaction withdraw(UUID accountId, BigDecimal amount) {
+    public Transaction withdraw(UUID accountId, BigDecimal amount, String idempotencyKey) {
 
         validateAmount(amount);
+
+        if (idempotencyKey != null) {
+            Optional<Transaction> existing = transactionRepository.findByIdempotencyKey(idempotencyKey);
+            if (existing.isPresent()) {
+                log.info("Idempotent withdrawal returned for key: {}", idempotencyKey);
+                return existing.get();
+            }
+        }
 
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found: " + accountId));
@@ -74,6 +95,7 @@ public class TransactionService {
                 .sourceAccountId(accountId)
                 .amount(amount)
                 .type("WITHDRAW")
+                .idempotencyKey(idempotencyKey)
                 .createdAt(Instant.now())
                 .build();
 
@@ -83,16 +105,26 @@ public class TransactionService {
         auditService.logAction("TRANSACTION", saved.getId().toString(), "WITHDRAW",
                 "Withdrawal of " + amount + " from account " + accountId, "SYSTEM");
 
+        amlService.checkTransaction(saved);
+
         return saved;
     }
 
     @Transactional
-    public Transaction transfer(UUID sourceAccountId, UUID targetAccountId, BigDecimal amount) {
+    public Transaction transfer(UUID sourceAccountId, UUID targetAccountId, BigDecimal amount, String idempotencyKey) {
 
         validateAmount(amount);
 
         if (sourceAccountId.equals(targetAccountId)) {
             throw new InvalidAmountException("Source and target accounts must be different");
+        }
+
+        if (idempotencyKey != null) {
+            Optional<Transaction> existing = transactionRepository.findByIdempotencyKey(idempotencyKey);
+            if (existing.isPresent()) {
+                log.info("Idempotent transfer returned for key: {}", idempotencyKey);
+                return existing.get();
+            }
         }
 
         Account source = accountRepository.findById(sourceAccountId)
@@ -116,6 +148,7 @@ public class TransactionService {
                 .targetAccountId(targetAccountId)
                 .amount(amount)
                 .type("TRANSFER")
+                .idempotencyKey(idempotencyKey)
                 .createdAt(Instant.now())
                 .build();
 
@@ -125,11 +158,12 @@ public class TransactionService {
         auditService.logAction("TRANSACTION", saved.getId().toString(), "TRANSFER",
                 "Transfer of " + amount + " from " + sourceAccountId + " to " + targetAccountId, "SYSTEM");
 
+        amlService.checkTransaction(saved);
+
         return saved;
     }
 
     public List<Transaction> getAccountTransactions(UUID accountId) {
-
         return transactionRepository
                 .findBySourceAccountIdOrTargetAccountId(accountId, accountId);
     }

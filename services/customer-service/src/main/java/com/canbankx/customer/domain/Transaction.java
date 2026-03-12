@@ -31,6 +31,9 @@ public class Transaction {
     @Column(nullable = false)
     private String type;
 
+    @Column(unique = true)
+    private String idempotencyKey;
+
     @Column(nullable = false)
     private Instant createdAt;
 

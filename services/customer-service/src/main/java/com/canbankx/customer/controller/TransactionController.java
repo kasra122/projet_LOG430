@@ -27,18 +27,20 @@ public class TransactionController {
     @Operation(summary = "Deposit funds into an account")
     public Transaction deposit(
             @RequestParam @NotNull UUID accountId,
-            @RequestParam @NotNull @Positive(message = "Amount must be positive") BigDecimal amount) {
+            @RequestParam @NotNull @Positive(message = "Amount must be positive") BigDecimal amount,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
 
-        return transactionService.deposit(accountId, amount);
+        return transactionService.deposit(accountId, amount, idempotencyKey);
     }
 
     @PostMapping("/withdraw")
     @Operation(summary = "Withdraw funds from an account")
     public Transaction withdraw(
             @RequestParam @NotNull UUID accountId,
-            @RequestParam @NotNull @Positive(message = "Amount must be positive") BigDecimal amount) {
+            @RequestParam @NotNull @Positive(message = "Amount must be positive") BigDecimal amount,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
 
-        return transactionService.withdraw(accountId, amount);
+        return transactionService.withdraw(accountId, amount, idempotencyKey);
     }
 
     @PostMapping("/transfer")
@@ -46,9 +48,10 @@ public class TransactionController {
     public Transaction transfer(
             @RequestParam @NotNull UUID sourceAccountId,
             @RequestParam @NotNull UUID targetAccountId,
-            @RequestParam @NotNull @Positive(message = "Amount must be positive") BigDecimal amount) {
+            @RequestParam @NotNull @Positive(message = "Amount must be positive") BigDecimal amount,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
 
-        return transactionService.transfer(sourceAccountId, targetAccountId, amount);
+        return transactionService.transfer(sourceAccountId, targetAccountId, amount, idempotencyKey);
     }
 
     @GetMapping("/{accountId}")
