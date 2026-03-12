@@ -1,8 +1,7 @@
-package com.canbankx.customer.domain;
+package com.canbankx.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.Instant;
 import java.util.UUID;
 
@@ -33,5 +32,4 @@ public class Customer {
 
     @Column(nullable = false)
     private Instant createdAt;
-
 }

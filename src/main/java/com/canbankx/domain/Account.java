@@ -2,34 +2,34 @@ package com.canbankx.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.Instant;  
 import java.util.UUID;
 
 @Entity
-@Table(name = "transactions")
+@Table(name = "accounts")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Transaction {
+public class Account {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(nullable = false)
-    private UUID sourceAccountId;
-
-    private UUID targetAccountId;
+    private UUID customerId;
 
     @Column(nullable = false)
-    private BigDecimal amount;
+    private String currency;
 
     @Column(nullable = false)
-    private String type;
+    private BigDecimal balance;
 
     @Column(nullable = false)
     private Instant createdAt;
+
 }
