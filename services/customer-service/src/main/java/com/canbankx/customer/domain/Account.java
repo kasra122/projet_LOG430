@@ -1,6 +1,7 @@
 package com.canbankx.customer.domain;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -22,6 +23,10 @@ public class Account {
 
     @Column(nullable = false)
     private UUID customerId;
+
+    @NotNull(message = "Account type is required")
+    @Column(nullable = false)
+    private String accountType;
 
     @Column(nullable = false)
     private String currency;
