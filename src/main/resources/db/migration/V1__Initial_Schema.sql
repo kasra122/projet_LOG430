@@ -4,6 +4,7 @@ CREATE TABLE customers (
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
     kyc_status VARCHAR(50) DEFAULT 'PENDING',
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
