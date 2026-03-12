@@ -3,6 +3,8 @@ package com.canbankx.controller;
 import com.canbankx.domain.Customer;
 import com.canbankx.dto.LoginRequest;
 import com.canbankx.dto.LoginResponse;
+import com.canbankx.exception.InvalidRequestException;
+import com.canbankx.exception.UnauthorizedException;
 import com.canbankx.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -25,29 +27,23 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
-        try {
-            // Verify customer exists
-            Customer customer = customerRepository.findByEmail(request.getEmail())
-                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-            // MVP: No password validation, just email verification
-            String mockToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." +
-                    System.currentTimeMillis() + "." +
-                    customer.getId().toString().hashCode();
-
-            LoginResponse response = new LoginResponse();
-            response.setToken(mockToken);
-            response.setCustomerId(customer.getId().toString());
-
-            return ResponseEntity.ok(response);
-
-        } catch (IllegalArgumentException e) {
-            LoginResponse errorResponse = new LoginResponse();
-            errorResponse.setToken(null);
-            errorResponse.setCustomerId(null);
-            
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            throw new InvalidRequestException("email", "Email cannot be empty");
         }
+
+        Customer customer = customerRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UnauthorizedException("User not found with email: " + request.getEmail()));
+
+        // MVP: No password validation, just email verification
+        String mockToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." +
+                System.currentTimeMillis() + "." +
+                customer.getId().toString().hashCode();
+
+        LoginResponse response = new LoginResponse();
+        response.setToken(mockToken);
+        response.setCustomerId(customer.getId().toString());
+
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -57,16 +53,16 @@ public class AuthController {
      * @return true if token is valid
      */
     @PostMapping("/verify")
-    public ResponseEntity<Boolean> verifyToken(@RequestHeader("Authorization") String token) {
-        try {
-            if (token == null || !token.startsWith("Bearer ")) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(false);
-            }
-            // MVP: Basic token validation
-            return ResponseEntity.ok(!token.isEmpty());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(false);
+    public ResponseEntity<Boolean> verifyToken(@RequestHeader(value = "Authorization", required = false) String token) {
+        if (token == null || token.isBlank()) {
+            throw new UnauthorizedException("Authorization header is missing");
         }
+
+        if (!token.startsWith("Bearer ")) {
+            throw new InvalidRequestException("Authorization header", "Must start with 'Bearer '");
+        }
+
+        return ResponseEntity.ok(true);
     }
 
     /**
@@ -75,7 +71,11 @@ public class AuthController {
      * @return Success message
      */
     @PostMapping("/logout")
-    public ResponseEntity<String> logout(@RequestHeader("Authorization") String token) {
+    public ResponseEntity<String> logout(@RequestHeader(value = "Authorization", required = false) String token) {
+        if (token == null || token.isBlank()) {
+            throw new UnauthorizedException("Authorization header is missing");
+        }
+
         return ResponseEntity.ok("Logged out successfully");
     }
 }

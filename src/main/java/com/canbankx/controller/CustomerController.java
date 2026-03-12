@@ -25,7 +25,7 @@ public class CustomerController {
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .email(request.getEmail())
-                .kycStatus("PENDING")  // KYC verification pending
+                .kycStatus("PENDING")
                 .createdAt(Instant.now())
                 .build();
 
@@ -38,8 +38,6 @@ public class CustomerController {
 
     @PostMapping
     public ResponseEntity<Customer> createCustomer(@RequestBody Customer customer) {
-        customer.setKycStatus("PENDING");
-        customer.setCreatedAt(Instant.now());
         Customer saved = service.createCustomer(customer);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
@@ -51,8 +49,7 @@ public class CustomerController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Customer> getCustomerById(@PathVariable UUID id) {
-        return service.getCustomerById(id)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        Customer customer = service.getCustomerById(id);
+        return ResponseEntity.ok(customer);
     }
 }

@@ -2,6 +2,9 @@ package com.canbankx.service;
 
 import com.canbankx.domain.Account;
 import com.canbankx.domain.Transaction;
+import com.canbankx.exception.InsufficientFundsException;
+import com.canbankx.exception.InvalidRequestException;
+import com.canbankx.exception.ResourceNotFoundException;
 import com.canbankx.repository.AccountRepository;
 import com.canbankx.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,9 +25,16 @@ public class TransactionService {
 
     @Transactional
     public Transaction deposit(UUID accountId, BigDecimal amount) {
+        if (accountId == null) {
+            throw new InvalidRequestException("accountId", "Account ID cannot be null");
+        }
+
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InvalidRequestException("amount", "Deposit amount must be greater than zero");
+        }
 
         Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new RuntimeException("Account not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Account", "id", accountId));
 
         account.setBalance(account.getBalance().add(amount));
         accountRepository.save(account);
@@ -41,12 +51,19 @@ public class TransactionService {
 
     @Transactional
     public Transaction withdraw(UUID accountId, BigDecimal amount) {
+        if (accountId == null) {
+            throw new InvalidRequestException("accountId", "Account ID cannot be null");
+        }
+
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InvalidRequestException("amount", "Withdrawal amount must be greater than zero");
+        }
 
         Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new RuntimeException("Account not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Account", "id", accountId));
 
         if (account.getBalance().compareTo(amount) < 0) {
-            throw new RuntimeException("Insufficient funds");
+            throw new InsufficientFundsException("Account balance: " + account.getBalance() + ", requested: " + amount);
         }
 
         account.setBalance(account.getBalance().subtract(amount));
@@ -64,15 +81,30 @@ public class TransactionService {
 
     @Transactional
     public Transaction transfer(UUID sourceAccountId, UUID targetAccountId, BigDecimal amount) {
+        if (sourceAccountId == null) {
+            throw new InvalidRequestException("sourceAccountId", "Source account ID cannot be null");
+        }
+
+        if (targetAccountId == null) {
+            throw new InvalidRequestException("targetAccountId", "Target account ID cannot be null");
+        }
+
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InvalidRequestException("amount", "Transfer amount must be greater than zero");
+        }
+
+        if (sourceAccountId.equals(targetAccountId)) {
+            throw new InvalidRequestException("targetAccountId", "Source and target accounts cannot be the same");
+        }
 
         Account source = accountRepository.findById(sourceAccountId)
-                .orElseThrow(() -> new RuntimeException("Source account not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Account", "id", sourceAccountId));
 
         Account target = accountRepository.findById(targetAccountId)
-                .orElseThrow(() -> new RuntimeException("Target account not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Account", "id", targetAccountId));
 
         if (source.getBalance().compareTo(amount) < 0) {
-            throw new RuntimeException("Insufficient funds");
+            throw new InsufficientFundsException("Source account balance: " + source.getBalance() + ", requested: " + amount);
         }
 
         source.setBalance(source.getBalance().subtract(amount));
@@ -93,6 +125,9 @@ public class TransactionService {
     }
 
     public List<Transaction> getAccountTransactions(UUID accountId) {
+        if (accountId == null) {
+            throw new InvalidRequestException("accountId", "Account ID cannot be null");
+        }
 
         return transactionRepository
                 .findBySourceAccountIdOrTargetAccountId(accountId, accountId);
