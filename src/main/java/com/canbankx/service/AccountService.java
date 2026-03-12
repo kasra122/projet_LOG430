@@ -1,7 +1,7 @@
-package com.canbankx.customer.service;
+package com.canbankx.service;
 
-import com.canbankx.customer.domain.Account;
-import com.canbankx.customer.repository.AccountRepository;
+import com.canbankx.domain.Account;
+import com.canbankx.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
