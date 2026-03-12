@@ -6,13 +6,18 @@ services:
     image: postgres:16
     container_name: canbankx-postgres
     environment:
-      POSTGRES_DB: canbankx
-      POSTGRES_USER: canbankx
-      POSTGRES_PASSWORD: canbankx
+      POSTGRES_DB: ${POSTGRES_DB:-canbankx}
+      POSTGRES_USER: ${POSTGRES_USER:-canbankx}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-canbankx}
     ports:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U canbankx"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   customer-service:
     build: ./services/customer-service
@@ -20,12 +25,45 @@ services:
     ports:
       - "8081:8080"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/canbankx
-      SPRING_DATASOURCE_USERNAME: canbankx
-      SPRING_DATASOURCE_PASSWORD: canbankx
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-canbankx}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-canbankx}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-canbankx}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JWT_SECRET: ${JWT_SECRET:-CanBankX_Default_Secret_Change_In_Production_2024}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: canbankx-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    depends_on:
+      - customer-service
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: canbankx-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
 
 volumes:
   postgres-data:
+  prometheus-data:
+  grafana-data:

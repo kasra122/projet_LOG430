@@ -26,6 +26,7 @@ public class TransactionService {
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
+    private final AuditService auditService;
 
     @Transactional
     public Transaction deposit(UUID accountId, BigDecimal amount) {
@@ -46,7 +47,12 @@ public class TransactionService {
                 .build();
 
         log.info("Deposit of {} to account {}", amount, accountId);
-        return transactionRepository.save(transaction);
+        Transaction saved = transactionRepository.save(transaction);
+
+        auditService.logAction("TRANSACTION", saved.getId().toString(), "DEPOSIT",
+                "Deposit of " + amount + " to account " + accountId, "SYSTEM");
+
+        return saved;
     }
 
     @Transactional
@@ -72,7 +78,12 @@ public class TransactionService {
                 .build();
 
         log.info("Withdrawal of {} from account {}", amount, accountId);
-        return transactionRepository.save(transaction);
+        Transaction saved = transactionRepository.save(transaction);
+
+        auditService.logAction("TRANSACTION", saved.getId().toString(), "WITHDRAW",
+                "Withdrawal of " + amount + " from account " + accountId, "SYSTEM");
+
+        return saved;
     }
 
     @Transactional
@@ -109,7 +120,12 @@ public class TransactionService {
                 .build();
 
         log.info("Transfer of {} from account {} to account {}", amount, sourceAccountId, targetAccountId);
-        return transactionRepository.save(transaction);
+        Transaction saved = transactionRepository.save(transaction);
+
+        auditService.logAction("TRANSACTION", saved.getId().toString(), "TRANSFER",
+                "Transfer of " + amount + " from " + sourceAccountId + " to " + targetAccountId, "SYSTEM");
+
+        return saved;
     }
 
     public List<Transaction> getAccountTransactions(UUID accountId) {

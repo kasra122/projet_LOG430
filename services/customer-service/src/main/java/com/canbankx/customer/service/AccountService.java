@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -19,25 +20,37 @@ import java.util.UUID;
 public class AccountService {
 
     private static final Logger log = LoggerFactory.getLogger(AccountService.class);
+    private static final Set<String> VALID_ACCOUNT_TYPES = Set.of("CHECKING", "SAVINGS");
 
     private final AccountRepository accountRepository;
     private final CustomerRepository customerRepository;
+    private final AuditService auditService;
 
-    public Account createAccount(UUID customerId, String currency) {
+    public Account createAccount(UUID customerId, String accountType, String currency) {
 
         if (!customerRepository.existsById(customerId)) {
             throw new ResourceNotFoundException("Customer not found: " + customerId);
         }
 
+        if (!VALID_ACCOUNT_TYPES.contains(accountType)) {
+            throw new IllegalArgumentException("Invalid account type: " + accountType + ". Must be CHECKING or SAVINGS");
+        }
+
         Account account = Account.builder()
                 .customerId(customerId)
+                .accountType(accountType)
                 .currency(currency)
                 .balance(BigDecimal.ZERO)
                 .createdAt(Instant.now())
                 .build();
 
-        log.info("Creating account for customer {} with currency {}", customerId, currency);
-        return accountRepository.save(account);
+        Account saved = accountRepository.save(account);
+
+        auditService.logAction("ACCOUNT", saved.getId().toString(), "CREATE",
+                "Account created: type=" + accountType + ", currency=" + currency, customerId.toString());
+
+        log.info("Created {} account for customer {} with currency {}", accountType, customerId, currency);
+        return saved;
     }
 
     public List<Account> getAccountsByCustomer(UUID customerId) {
