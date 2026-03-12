@@ -3,6 +3,7 @@ package com.canbankx.customer.repository;
 import com.canbankx.customer.domain.Transaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,4 +13,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     List<Transaction> findBySourceAccountIdOrTargetAccountId(UUID sourceAccountId, UUID targetAccountId);
 
     Optional<Transaction> findByIdempotencyKey(String idempotencyKey);
+
+    long countBySourceAccountIdAndCreatedAtAfter(UUID sourceAccountId, Instant after);
 }

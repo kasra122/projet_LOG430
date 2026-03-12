@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -46,15 +45,10 @@ public class AmlService {
                     "AML_SYSTEM");
         }
 
-        // Rule 2: High frequency detection
+        // Rule 2: High frequency detection (queried at DB level for performance)
         UUID accountId = transaction.getSourceAccountId();
-        List<Transaction> recentTransactions = transactionRepository
-                .findBySourceAccountIdOrTargetAccountId(accountId, accountId);
-
         Instant oneDayAgo = Instant.now().minus(24, ChronoUnit.HOURS);
-        long recentCount = recentTransactions.stream()
-                .filter(t -> t.getCreatedAt().isAfter(oneDayAgo))
-                .count();
+        long recentCount = transactionRepository.countBySourceAccountIdAndCreatedAtAfter(accountId, oneDayAgo);
 
         if (recentCount > HIGH_FREQUENCY_THRESHOLD) {
             flagged = true;
