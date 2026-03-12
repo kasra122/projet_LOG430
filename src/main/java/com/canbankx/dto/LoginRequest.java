@@ -1,4 +1,4 @@
-package com.canbankx.dto;
+package com.canbankx.customer.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,8 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class SignupRequest {
-    private String firstName;
-    private String lastName;
+public class LoginRequest {
     private String email;
+    private String password; // Optionnel pour MVP (simulation)
 }

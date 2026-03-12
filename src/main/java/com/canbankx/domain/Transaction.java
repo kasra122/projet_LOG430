@@ -1,7 +1,8 @@
-package com.canbankx.domain;
+package com.canbankx.customer.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
@@ -32,4 +33,5 @@ public class Transaction {
 
     @Column(nullable = false)
     private Instant createdAt;
+
 }

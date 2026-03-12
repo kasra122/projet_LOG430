@@ -1,7 +1,7 @@
 package com.canbankx.customer.controller;
 
 import com.canbankx.customer.domain.Customer;
-import com.canbankx.dto.SignupRequest;
+import com.canbankx.customer.dto.SignupRequest;
 import com.canbankx.customer.service.CustomerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
