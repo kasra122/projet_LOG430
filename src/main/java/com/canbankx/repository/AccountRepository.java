@@ -1,6 +1,6 @@
-package com.canbankx.customer.repository;
+package com.canbankx.repository;
 
-import com.canbankx.customer.domain.Account;
+import com.canbankx.domain.Account;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.canbankx.customer.dto;
+package com.canbankx.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

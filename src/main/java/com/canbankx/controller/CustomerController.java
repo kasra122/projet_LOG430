@@ -1,8 +1,8 @@
-package com.canbankx.customer.controller;
+package com.canbankx.controller;
 
-import com.canbankx.customer.domain.Customer;
+import com.canbankx.domain.Customer;
 import com.canbankx.dto.SignupRequest;
-import com.canbankx.customer.service.CustomerService;
+import com.canbankx.service.CustomerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

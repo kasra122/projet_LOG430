@@ -1,4 +1,4 @@
-package com.canbankx.customer.domain;
+package com.canbankx.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
