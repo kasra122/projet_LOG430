@@ -1,9 +1,9 @@
-package com.canbankx.customer.service;
+package com.canbankx.service;
 
-import com.canbankx.customer.domain.Account;
-import com.canbankx.customer.domain.Transaction;
-import com.canbankx.customer.repository.AccountRepository;
-import com.canbankx.customer.repository.TransactionRepository;
+import com.canbankx.domain.Account;
+import com.canbankx.domain.Transaction;
+import com.canbankx.repository.AccountRepository;
+import com.canbankx.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

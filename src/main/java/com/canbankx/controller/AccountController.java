@@ -1,7 +1,7 @@
-package com.canbankx.customer.controller;
+package com.canbankx.controller;
 
-import com.canbankx.customer.domain.Account;
-import com.canbankx.customer.service.AccountService;
+import com.canbankx.domain.Account;
+import com.canbankx.service.AccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 

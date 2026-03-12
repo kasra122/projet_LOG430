@@ -1,4 +1,4 @@
-package com.canbankx.customer.controller;
+package com.canbankx.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

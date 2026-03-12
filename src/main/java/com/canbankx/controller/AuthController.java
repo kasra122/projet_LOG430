@@ -1,9 +1,9 @@
-package com.canbankx.customer.controller;
+package com.canbankx.controller;
 
-import com.canbankx.customer.domain.Customer;
-import com.canbankx.customer.dto.LoginRequest;
-import com.canbankx.customer.dto.LoginResponse;
-import com.canbankx.customer.repository.CustomerRepository;
+import com.canbankx.domain.Customer;
+import com.canbankx.dto.LoginRequest;
+import com.canbankx.dto.LoginResponse;
+import com.canbankx.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
