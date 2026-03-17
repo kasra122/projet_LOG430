@@ -1,4 +1,4 @@
-package com.canbankx.customer.config;
+package com.canbankx.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

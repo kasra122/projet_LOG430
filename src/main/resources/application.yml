@@ -1,6 +1,7 @@
 spring:
   application:
-    name: customer-service
+    name: canbankx
+
   jpa:
     hibernate:
       ddl-auto: validate
@@ -9,6 +10,7 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+
   datasource:
     url: jdbc:postgresql://postgres:5432/canbankx
     username: root
@@ -16,6 +18,7 @@ spring:
     hikari:
       maximum-pool-size: 10
       minimum-idle: 2
+
   flyway:
     enabled: true
     locations: classpath:db/migration
@@ -24,6 +27,10 @@ server:
   port: 8080
   servlet:
     context-path: /
+
+jwt:
+  secret: ${JWT_SECRET:CanBankX-Secret-Key-Must-Be-At-Least-32-Characters-Long-For-HS256}
+  expiration: ${JWT_EXPIRATION:3600000}
 
 management:
   endpoints:
@@ -46,10 +53,3 @@ logging:
     com.canbankx: DEBUG
   pattern:
     console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
-
-app:
-  jwt:
-    secret: ThisIsAVeryLongSecretKeyForJWTSigningPurposeOnlyAndMustBeAtLeast32CharactersLong1234567890
-    expiration: 86400000  # 24 hours in ms
-  security:
-    cors-origins: "http://localhost:3000,http://localhost:8080"
