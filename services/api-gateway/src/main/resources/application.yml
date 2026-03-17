@@ -1,0 +1,59 @@
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        # Customer Service
+        - id: customer-service
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/v1/customers/**
+          filters:
+            - AddRequestHeader=X-Service-Name,customer-service
+
+        # Transaction Service
+        - id: transaction-service
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/v1/transactions/**
+          filters:
+            - AddRequestHeader=X-Service-Name,transaction-service
+
+        # Settlement Service
+        - id: settlement-service
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/v1/settlements/**
+          filters:
+            - AddRequestHeader=X-Service-Name,settlement-service
+
+        # Health checks
+        - id: health-check
+          uri: http://localhost:8081
+          predicates:
+            - Path=/actuator/**
+
+      # CORS configuration
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
+        - RemoveRequestHeader=Cookie
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+logging:
+  level:
+    root: INFO
+    com.canbankx: DEBUG
+    org.springframework.cloud.gateway: DEBUG

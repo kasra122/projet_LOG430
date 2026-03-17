@@ -1,39 +1,70 @@
 version: '3.8'
 
 services:
+  # PostgreSQL Database
   postgres:
-    image: postgres:16-alpine
+    image: postgres:14-alpine
     container_name: canbankx-postgres
     environment:
-      POSTGRES_DB: canbankx
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: canbankx_customer
+      POSTGRES_USER: canbankx_user
+      POSTGRES_PASSWORD: canbankx_password
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U root"]
+      test: ["CMD-SHELL", "pg_isready -U canbankx_user"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
       - canbankx-network
 
-  canbankx:
+  # Customer Service (Port 8081)
+  customer-service:
     build:
-      context: .
+      context: ./services/customer-service
       dockerfile: Dockerfile
-    container_name: canbankx-app
+    container_name: canbankx-customer-service
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/canbankx
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/canbankx_customer
+      SPRING_DATASOURCE_USERNAME: canbankx_user
+      SPRING_DATASOURCE_PASSWORD: canbankx_password
+      BANK_ID: 2
+      BANK_CENTRAL_BANK_URL: http://central-bank:8090
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SERVER_PORT: 8081
     ports:
-      - "8080:8080"
+      - "8081:8081"
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - canbankx-network
+
+  # API Gateway (Port 8080)
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: canbankx-api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      customer-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - canbankx-network
 
