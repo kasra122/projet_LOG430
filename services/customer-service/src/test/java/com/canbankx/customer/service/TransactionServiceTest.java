@@ -1,21 +1,19 @@
 package com.canbankx.customer.service;
 
-import com.canbankx.customer.config.TestDataBuilder;
 import com.canbankx.customer.domain.Account;
 import com.canbankx.customer.domain.Transaction;
+import com.canbankx.customer.dto.CentralBankTransferResponse;
 import com.canbankx.customer.infrastructure.CentralBankClient;
-import com.canbankx.customer.infrastructure.InterBankClient;
 import com.canbankx.customer.repository.AccountRepository;
-import com.canbankx.customer.repository.CustomerRepository;
 import com.canbankx.customer.repository.TransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -33,90 +31,175 @@ class TransactionServiceTest {
     private AccountRepository accountRepository;
 
     @Mock
-    private CustomerRepository customerRepository;
-
-    @Mock
-    private InterBankClient interBankClient;
-
-    @Mock
     private CentralBankClient centralBankClient;
 
-    @InjectMocks
     private TransactionService transactionService;
-
-    private UUID customerId;
-    private UUID sourceAccountId;
-    private UUID targetAccountId;
-    private Account sourceAccount;
-    private Account targetAccount;
 
     @BeforeEach
     void setUp() {
-        customerId = UUID.randomUUID();
-        sourceAccountId = UUID.randomUUID();
-        targetAccountId = UUID.randomUUID();
-
-        sourceAccount = TestDataBuilder.buildAccount(customerId, new BigDecimal("1000.00"));
-        sourceAccount.setId(sourceAccountId);
-
-        targetAccount = TestDataBuilder.buildAccount(customerId, new BigDecimal("500.00"));
-        targetAccount.setId(targetAccountId);
+        transactionService = new TransactionService(transactionRepository, accountRepository, centralBankClient);
     }
 
     @Test
-    void testDeposit_Success() {
-        when(accountRepository.findById(sourceAccountId)).thenReturn(Optional.of(sourceAccount));
-        when(accountRepository.save(any(Account.class))).thenReturn(sourceAccount);
-        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    void testInitiateInterbankTransfer_Success() {
+        // Arrange
+        UUID senderAccountId = UUID.randomUUID();
+        Account senderAccount = Account.builder()
+                .id(senderAccountId)
+                .balance(BigDecimal.valueOf(5000))
+                .build();
 
-        Transaction result = transactionService.deposit(sourceAccountId, new BigDecimal("100.00"));
+        when(accountRepository.findById(senderAccountId))
+                .thenReturn(Optional.of(senderAccount));
 
+        when(transactionRepository.save(any(Transaction.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        CentralBankTransferResponse cbResponse = CentralBankTransferResponse.builder()
+                .externalTransactionId("TXN-ABC12345")
+                .centralBankTransactionId("CB-TXN-99999")
+                .status("ACCEPTED")
+                .processedAt(Instant.now())
+                .build();
+
+        when(centralBankClient.sendTransferRequest(any()))
+                .thenReturn(cbResponse);
+
+        // Act
+        Transaction result = transactionService.initiateInterbankTransfer(
+                senderAccountId,
+                "john@bank2.com",
+                "jane@bank1.com",
+                1,
+                BigDecimal.valueOf(1000),
+                "CAD"
+        );
+
+        // Assert
         assertNotNull(result);
-        assertEquals(Transaction.TransactionStatus.SETTLED, result.getStatus());
-        assertEquals(Transaction.TransactionType.DEPOSIT, result.getType());
-        verify(accountRepository, atLeastOnce()).findById(sourceAccountId);
+        assertEquals(Transaction.TransactionStatus.PROCESSING, result.getStatus());
+        assertEquals("CB-TXN-99999", result.getCentralBankTransactionId());
+        verify(accountRepository, atLeastOnce()).save(any(Account.class)); // At least once for deduction
+        verify(transactionRepository, atLeastOnce()).save(any(Transaction.class)); // At least once for transaction
     }
 
     @Test
-    void testWithdraw_Success() {
-        when(accountRepository.findById(sourceAccountId)).thenReturn(Optional.of(sourceAccount));
-        when(accountRepository.save(any(Account.class))).thenReturn(sourceAccount);
-        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    void testInitiateInterbankTransfer_InsufficientBalance() {
+        // Arrange
+        UUID senderAccountId = UUID.randomUUID();
+        Account senderAccount = Account.builder()
+                .id(senderAccountId)
+                .balance(BigDecimal.valueOf(100)) // Only 100, trying to send 1000
+                .build();
 
-        Transaction result = transactionService.withdraw(sourceAccountId, new BigDecimal("100.00"));
+        when(accountRepository.findById(senderAccountId))
+                .thenReturn(Optional.of(senderAccount));
 
-        assertNotNull(result);
-        assertEquals(Transaction.TransactionStatus.SETTLED, result.getStatus());
-        assertEquals(Transaction.TransactionType.WITHDRAW, result.getType());
-        verify(accountRepository, atLeastOnce()).findById(sourceAccountId);
+        // Act & Assert
+        assertThrows(TransactionService.TransactionException.class,
+                () -> transactionService.initiateInterbankTransfer(
+                        senderAccountId,
+                        "john@bank2.com",
+                        "jane@bank1.com",
+                        1,
+                        BigDecimal.valueOf(1000),
+                        "CAD"
+                ));
+
+        verify(transactionRepository, never()).save(any());
     }
 
     @Test
-    void testTransferLocal_Success() {
-        when(accountRepository.findById(sourceAccountId)).thenReturn(Optional.of(sourceAccount));
-        when(accountRepository.findById(targetAccountId)).thenReturn(Optional.of(targetAccount));
-        when(accountRepository.save(any(Account.class))).thenReturn(sourceAccount);
-        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    void testInitiateInterbankTransfer_AccountNotFound() {
+        // Arrange
+        UUID senderAccountId = UUID.randomUUID();
+        when(accountRepository.findById(senderAccountId))
+                .thenReturn(Optional.empty());
 
-        String idempotencyKey = UUID.randomUUID().toString();
-        Transaction result = transactionService.transferLocal(sourceAccountId, targetAccountId, new BigDecimal("100.00"), idempotencyKey);
-
-        assertNotNull(result);
-        assertEquals(Transaction.TransactionStatus.SETTLED, result.getStatus());
-        assertEquals(Transaction.TransactionType.TRANSFER, result.getType());
-        verify(accountRepository, atLeastOnce()).findById(any(UUID.class));
+        // Act & Assert
+        assertThrows(TransactionService.TransactionException.class,
+                () -> transactionService.initiateInterbankTransfer(
+                        senderAccountId,
+                        "john@bank2.com",
+                        "jane@bank1.com",
+                        1,
+                        BigDecimal.valueOf(1000),
+                        "CAD"
+                ));
     }
 
     @Test
-    void testTransferLocal_InsufficientFunds() {
-        Account lowBalanceAccount = TestDataBuilder.buildAccount(customerId, new BigDecimal("10.00"));
-        lowBalanceAccount.setId(sourceAccountId);
+    void testInitiateInterbankTransfer_CentralBankError() {
+        // Arrange
+        UUID senderAccountId = UUID.randomUUID();
+        Account senderAccount = Account.builder()
+                .id(senderAccountId)
+                .balance(BigDecimal.valueOf(5000))
+                .build();
 
-        when(accountRepository.findById(sourceAccountId)).thenReturn(Optional.of(lowBalanceAccount));
-        when(accountRepository.findById(targetAccountId)).thenReturn(Optional.of(targetAccount));
+        when(accountRepository.findById(senderAccountId))
+                .thenReturn(Optional.of(senderAccount));
 
-        String idempotencyKey = UUID.randomUUID().toString();
-        assertThrows(TransactionService.InsufficientFundsException.class, () ->
-            transactionService.transferLocal(sourceAccountId, targetAccountId, new BigDecimal("100.00"), idempotencyKey));
+        when(transactionRepository.save(any(Transaction.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        when(centralBankClient.sendTransferRequest(any()))
+                .thenThrow(new CentralBankClient.CentralBankCommunicationException("Connection failed", new RuntimeException()));
+
+        // Act & Assert
+        assertThrows(TransactionService.TransactionException.class,
+                () -> transactionService.initiateInterbankTransfer(
+                        senderAccountId,
+                        "john@bank2.com",
+                        "jane@bank1.com",
+                        1,
+                        BigDecimal.valueOf(1000),
+                        "CAD"
+                ));
+
+        // Verify refund was issued
+        verify(accountRepository, atLeastOnce()).save(any(Account.class));
+    }
+
+    @Test
+    void testGetTransaction() {
+        // Arrange
+        UUID txnId = UUID.randomUUID();
+        Transaction transaction = Transaction.builder()
+                .id(txnId)
+                .externalTransactionId("TXN-ABC12345")
+                .status(Transaction.TransactionStatus.SETTLED)
+                .build();
+
+        when(transactionRepository.findById(txnId))
+                .thenReturn(Optional.of(transaction));
+
+        // Act
+        Optional<Transaction> result = transactionService.getTransaction(txnId);
+
+        // Assert
+        assertTrue(result.isPresent());
+        assertEquals(txnId, result.get().getId());
+    }
+
+    @Test
+    void testGetTransactionByExternalId() {
+        // Arrange
+        String externalId = "TXN-ABC12345";
+        Transaction transaction = Transaction.builder()
+                .id(UUID.randomUUID())
+                .externalTransactionId(externalId)
+                .status(Transaction.TransactionStatus.SETTLED)
+                .build();
+
+        when(transactionRepository.findByExternalTransactionId(externalId))
+                .thenReturn(Optional.of(transaction));
+
+        // Act
+        Optional<Transaction> result = transactionService.getTransactionByExternalId(externalId);
+
+        // Assert
+        assertTrue(result.isPresent());
+        assertEquals(externalId, result.get().getExternalTransactionId());
     }
 }

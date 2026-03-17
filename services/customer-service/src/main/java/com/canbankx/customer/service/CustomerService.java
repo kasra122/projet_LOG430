@@ -38,8 +38,8 @@ public class CustomerService {
         Customer saved = customerRepository.save(customer);
         log.info("Customer registered: {}", saved.getId());
 
-        // Register with central bank async
-        centralBankClient.registerCustomerWithCentralBank(saved);
+        // TODO: Register with central bank when endpoint is available
+        // centralBankClient.registerCustomerWithCentralBank(saved);
 
         return saved;
     }

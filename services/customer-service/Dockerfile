@@ -1,11 +1,9 @@
-FROM eclipse-temurin:21-jdk
+FROM eclipse-temurin:21-jdk-alpine
 
 WORKDIR /app
 
-COPY . .
+COPY build/libs/customer-service-*.jar app.jar
 
-RUN ./gradlew build -x test
+EXPOSE 8081
 
-EXPOSE 8080
-
-CMD ["java","-jar","build/libs/customer-service-0.0.1-SNAPSHOT.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]

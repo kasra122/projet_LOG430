@@ -11,23 +11,20 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SettlementNotificationRequest {
+public class CentralBankTransferResponse {
     
-    // Our internal transaction ID
+    // Our internal transaction ID (echo back)
     private String externalTransactionId;
     
     // Central Bank's transaction ID
     private String centralBankTransactionId;
     
-    // Final result: SETTLED, REJECTED, EXPIRED
-    private String result;
+    // Status: ACCEPTED, REJECTED, PENDING
+    private String status;
     
-    // Reason (if REJECTED or EXPIRED)
+    // Reason if rejected
     private String reason;
     
-    // When Central Bank finalized it
-    private Instant settledAt;
-    
-    // Idempotency key (so we don't process same settlement twice)
-    private String idempotencyKey;
+    // When Central Bank processed it
+    private Instant processedAt;
 }

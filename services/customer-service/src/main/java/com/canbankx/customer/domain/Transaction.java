@@ -12,7 +12,8 @@ import java.util.UUID;
     @Index(name = "idx_target_account", columnList = "target_account_id"),
     @Index(name = "idx_idempotency_key", columnList = "idempotency_key", unique = true),
     @Index(name = "idx_status", columnList = "status"),
-    @Index(name = "idx_external_id", columnList = "external_transaction_id")
+    @Index(name = "idx_external_id", columnList = "external_transaction_id"),
+    @Index(name = "idx_central_bank_id", columnList = "central_bank_transaction_id")
 })
 @Getter
 @Setter
@@ -60,8 +61,13 @@ public class Transaction {
     @Column(unique = true)
     private String idempotencyKey;
 
+    // Our internal transaction ID (for tracing)
     @Column(name = "external_transaction_id")
     private String externalTransactionId;
+
+    // Central Bank's transaction ID (received from Central Bank)
+    @Column(name = "central_bank_transaction_id")
+    private String centralBankTransactionId;
 
     @Column(nullable = false)
     private Instant createdAt;
@@ -75,11 +81,19 @@ public class Transaction {
     @Column(name = "expires_at")
     private Instant expiresAt;
 
+    // Rejection or expiration reason from Central Bank
+    @Column(name = "rejection_reason", length = 500)
+    private String rejectionReason;
+
+    // Timestamp when we sent to Central Bank
+    @Column(name = "sent_to_central_bank_at")
+    private Instant sentToCentralBankAt;
+
     @PrePersist
     protected void onCreate() {
         createdAt = Instant.now();
         updatedAt = Instant.now();
-        expiresAt = Instant.now().plusSeconds(86400);
+        expiresAt = Instant.now().plusSeconds(86400); // 24 hours
     }
 
     @PreUpdate

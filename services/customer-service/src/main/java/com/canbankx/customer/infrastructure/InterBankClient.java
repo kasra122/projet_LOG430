@@ -2,9 +2,12 @@ package com.canbankx.customer.infrastructure;
 
 import com.canbankx.customer.dto.InboundTransferRequest;
 import com.canbankx.customer.dto.InboundTransferResponse;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -22,6 +25,12 @@ public class InterBankClient {
     @Value("${bank.interbank-urls.bank-3:http://bank3:8093}")
     private String bank3Url;
 
+    @Retryable(
+            retryFor = {java.net.SocketTimeoutException.class, org.springframework.web.client.ResourceAccessException.class},
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 500, multiplier = 2)
+    )
+    @CircuitBreaker(name = "interbank-cb", fallbackMethod = "transferFallback")
     public InboundTransferResponse sendTransferToBank(
             Integer receiverBankId,
             InboundTransferRequest request) {
@@ -47,6 +56,19 @@ public class InterBankClient {
                     e
             );
         }
+    }
+
+    public InboundTransferResponse transferFallback(
+            Integer receiverBankId,
+            InboundTransferRequest request,
+            Exception ex) {
+        log.warn("Circuit breaker fallback triggered for Bank {}: {}", receiverBankId, ex.getMessage());
+        
+        return InboundTransferResponse.builder()
+                .externalTransactionId(request.getExternalTransactionId())
+                .status("PENDING")
+                .reason("Bank temporarily unavailable. Transfer will be retried.")
+                .build();
     }
 
     private String getBankUrl(Integer bankId) {

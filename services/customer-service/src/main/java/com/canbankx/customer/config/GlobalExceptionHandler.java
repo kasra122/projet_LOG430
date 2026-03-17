@@ -1,6 +1,7 @@
 package com.canbankx.customer.config;
 
 import com.canbankx.customer.service.CustomerService;
+import com.canbankx.customer.service.SettlementService;
 import com.canbankx.customer.service.TransactionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -31,14 +32,14 @@ public class GlobalExceptionHandler {
         );
     }
 
-    @ExceptionHandler(TransactionService.InsufficientFundsException.class)
-    public ResponseEntity<ErrorResponse> handleInsufficientFundsException(TransactionService.InsufficientFundsException ex) {
-        log.error("Insufficient funds: {}", ex.getMessage());
-        return ResponseEntity.badRequest().body(
+    @ExceptionHandler(SettlementService.SettlementException.class)
+    public ResponseEntity<ErrorResponse> handleSettlementException(SettlementService.SettlementException ex) {
+        log.error("Settlement error: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                 ErrorResponse.builder()
                         .timestamp(Instant.now())
-                        .status(400)
-                        .error("Insufficient Funds")
+                        .status(404)
+                        .error("Settlement Error")
                         .message(ex.getMessage())
                         .build()
         );
