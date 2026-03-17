@@ -1,78 +1,64 @@
 plugins {
-        id 'java'
-        id 'org.springframework.boot' version '3.3.0'
-        id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
+    id 'org.springframework.boot' version '3.2.0'
+    id 'io.spring.dependency-management' version '1.1.4'
 }
 
 group = 'com.canbankx'
 version = '0.0.1-SNAPSHOT'
-description = 'CanBankX - Canadian Banking Platform'
+description = 'CanBankX Customer Service'
 
 java {
-        toolchain {
-                languageVersion = JavaLanguageVersion.of(21)
-        }
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 configurations {
-        compileOnly {
-                extendsFrom annotationProcessor
-        }
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
 }
 
 repositories {
-        mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
-        // Spring Boot Core
-        implementation 'org.springframework.boot:spring-boot-starter-web'
-        implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-        implementation 'org.springframework.boot:spring-boot-starter-security'
-        implementation 'org.springframework.boot:spring-boot-starter-validation'
-        implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    // Spring Boot Core
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
-        // Database
-        runtimeOnly 'org.postgresql:postgresql'
-        implementation 'org.flywaydb:flyway-core'
-        implementation 'org.flywaydb:flyway-database-postgresql'
+    // Database
+    runtimeOnly 'org.postgresql:postgresql'
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
 
-        // JWT
-        implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
-        runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.3'
-        runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.3'
+    // OpenAPI / Swagger
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.0.2'
 
-        // OpenAPI / Swagger
-        implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
+    // Observability - Micrometer & Prometheus
+    implementation 'io.micrometer:micrometer-registry-prometheus'
 
-        // Observability - Micrometer & Prometheus
-        implementation 'io.micrometer:micrometer-registry-prometheus'
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
 
-        // Lombok
-        compileOnly 'org.projectlombok:lombok'
-        annotationProcessor 'org.projectlombok:lombok'
-
-        // Testing
-        testImplementation 'org.springframework.boot:spring-boot-starter-test'
-        testImplementation 'org.springframework.security:spring-security-test'
-        testImplementation 'org.testcontainers:testcontainers:1.19.7'
-        testImplementation 'org.testcontainers:postgresql:1.19.7'
-        testImplementation 'org.testcontainers:junit-jupiter:1.19.7'
+    // Testing
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.testcontainers:testcontainers:1.19.1'
+    testImplementation 'org.testcontainers:postgresql:1.19.1'
+    testImplementation 'org.testcontainers:junit-jupiter:1.19.1'
 }
 
 tasks.named('test') {
-        useJUnitPlatform()
-}
-
-tasks.named('bootJar') {
-        enabled = false
-}
-
-tasks.named('jar') {
-        enabled = true
-        archiveClassifier = ''
+    useJUnitPlatform()
 }
 
 springBoot {
-        mainClass = 'com.canbankx.CanBankXApplication'
+    mainClass = 'com.canbankx.CanBankXApplication'
 }

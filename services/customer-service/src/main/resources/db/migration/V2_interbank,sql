@@ -1,0 +1,17 @@
+-- Add missing columns to transactions table if they don't exist
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS sender_bank_id INTEGER NOT NULL DEFAULT 2;
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS receiver_bank_id INTEGER NOT NULL DEFAULT 2;
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS source_customer_email VARCHAR(255);
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS target_customer_email VARCHAR(255);
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS idempotency_key VARCHAR(255) UNIQUE;
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS external_transaction_id VARCHAR(255) UNIQUE;
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS settled_at TIMESTAMP;
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP;
+
+-- Update transaction type enum if needed
+-- Note: PostgreSQL handles enum updates carefully, so this is manual if needed
+
+-- Create indices
+CREATE INDEX IF NOT EXISTS idx_transactions_idempotency_key ON transactions(idempotency_key);
+CREATE INDEX IF NOT EXISTS idx_transactions_external_id ON transactions(external_transaction_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_status ON transactions(status);
