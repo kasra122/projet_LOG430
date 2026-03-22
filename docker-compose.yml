@@ -1,45 +1,25 @@
-version: '3.8'
-
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: canbankx-postgres
-    environment:
-      POSTGRES_DB: canbankx
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: password
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U root"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - canbankx-network
-
-  canbankx:
+  canbankx-app:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: canbankx-app
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/canbankx
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: password
+      dockerfile: services/customer-service/Dockerfile
     ports:
       - "8080:8080"
     depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - canbankx-network
+      - postgres
 
-volumes:
-  postgres_data:
+  canbankx-gateway:
+    build: ./services/api-gateway
+    ports:
+      - "8081:8080"
+    depends_on:
+      - canbankx-app
 
-networks:
-  canbankx-network:
-    driver: bridge
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: canbankx
+    ports:
+      - "5432:5432"

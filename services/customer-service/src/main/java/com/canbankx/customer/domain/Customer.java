@@ -7,8 +7,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "customers", indexes = {
-    @Index(name = "idx_email", columnList = "email"),
-    @Index(name = "idx_bank_id", columnList = "bank_id")
+    @Index(name = "idx_email", columnList = "email", unique = true)
 })
 @Getter
 @Setter
@@ -29,6 +28,9 @@ public class Customer {
 
     @Column(unique = true, nullable = false)
     private String email;
+
+    @Column(nullable = false)
+    private String password;
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)

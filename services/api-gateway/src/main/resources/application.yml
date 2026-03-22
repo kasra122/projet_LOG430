@@ -1,0 +1,11 @@
+server:
+  port: 8080
+
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: customer-service
+          uri: http://canbankx:8080
+          predicates:
+            - Path=/api/**

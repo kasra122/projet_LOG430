@@ -8,7 +8,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "accounts", indexes = {
-    @Index(name = "idx_customer_id", columnList = "customer_id")
+    @Index(name = "idx_customer_id", columnList = "customer_id"),
+    @Index(name = "idx_account_number", columnList = "account_number", unique = true)
 })
 @Getter
 @Setter
@@ -21,8 +22,11 @@ public class Account {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(name = "customer_id", nullable = false)
     private UUID customerId;
+
+    @Column(name = "account_number", unique = true, nullable = false)
+    private String accountNum;
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
@@ -60,6 +64,6 @@ public class Account {
     }
 
     public enum AccountStatus {
-        ACTIVE, FROZEN, CLOSED
+        ACTIVE, SUSPENDED, CLOSED
     }
 }

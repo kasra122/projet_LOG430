@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: canbankx
+      POSTGRES_USER: bankadmin
+      POSTGRES_PASSWORD: bankpass123
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  customer-service:
+    build: ./services/customer-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/canbankx
+      SPRING_DATASOURCE_USERNAME: bankadmin
+      SPRING_DATASOURCE_PASSWORD: bankpass123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JWT_SECRET: mysupersecretkey123
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,prometheus,metrics
+      SERVER_PORT: 8081
+    depends_on:
+      - postgres
+
+  api-gateway:
+    build: ./services/api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      SERVER_PORT: 8080
+    depends_on:
+      - customer-service
+
+volumes:
+  postgres_data:

@@ -22,6 +22,7 @@ public class CustomerController {
 
     @PostMapping("/register")
     public ResponseEntity<Customer> registerCustomer(@RequestBody CustomerRequest request) {
+        System.out.println("register endpoint hit");
         log.info("Registering new customer: {}", request.getEmail());
         Customer customer = customerService.registerCustomer(request.getFirstName(), request.getLastName(), request.getEmail());
         return ResponseEntity.status(HttpStatus.CREATED).body(customer);
